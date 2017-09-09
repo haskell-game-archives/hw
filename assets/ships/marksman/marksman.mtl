@@ -1,0 +1,24 @@
+# Blender MTL File: 'marksman.blend'
+# Material Count: 2
+
+newmtl Material.001
+Ns 245.098039
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.615139 0.615139 0.615139
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd marksman.texture.tga
+
+newmtl Material_marksman.texture.
+Ns 245.098039
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.615139 0.615139 0.615139
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd marksman.texture.tga

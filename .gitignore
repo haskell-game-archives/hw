@@ -1,0 +1,8 @@
+.cabal-sandbox
+cabal.sandbox.config
+dist
+*.hp
+*.ps
+*.aux
+.*.swp
+*.blend1
