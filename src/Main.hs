@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
 module Main where
 
@@ -9,7 +9,6 @@ import qualified SDL
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GLUtil as GLU
-import qualified Graphics.GLUtil.Camera3D as GLU (projectionMatrix)
 
 import Control.Monad (when)
 
@@ -33,12 +32,12 @@ main =
     { initComponents = All
     , windowTitle    = "hw"
     , windowConfig   = SDL.defaultWindow
-      { windowInitialSize = SDL.V2 800 600
+      { windowInitialSize = SDL.V2 1600 900
       , windowOpenGL = Just SDL.defaultOpenGL
         { SDL.glProfile = SDL.Core SDL.Normal 3 2
         }
       }
-    , initScreenMode = SDL.Windowed
+    , initScreenMode = SDL.Fullscreen
     , preLoop = return ()
     , eventLoop = handle
     , updateLoop = update
@@ -49,16 +48,30 @@ main =
     }
 
 data StateData = StateData
-  { ship :: (GL.VertexArrayObject, Int)
+  { ships :: [Ship]
+  , camera :: Camera
   , proj :: M44 Float
-  , view :: M44 Float
-  , model :: V3 Float
+  -- , look :: V3 Float
+  -- , view :: M44 Float
   , program :: GLU.ShaderProgram
-  , mrot :: Quaternion Float
+  }
+
+data Ship = Ship
+  { shipVao    :: GL.VertexArrayObject
+  , shipVaoLen :: Int
+  , shipPos    :: V3 Float
+  , shipRot    :: Quaternion Float
+  }
+
+data Camera = Camera
+  { cameraFocus :: V3 Float
+  , cameraRot :: Quaternion Float
+  , cameraDist :: Float
   }
 
 load :: IO StateData
 load = do
+  _ <- SDL.setMouseLocationMode SDL.RelativeLocation
   GL.depthFunc $= Just GL.Less
   eobj <- fromFile "assets/ships/jaeger/jaeger.obj"
   let obj = case eobj of
@@ -126,13 +139,20 @@ load = do
         ]
   p <- GLU.simpleShaderProgramBS vertexShader fragmentShader
 
+  let shipList = map (uncurry $ Ship shipBO (length $ loTriangles lobj))
+        [ (V3 (-3) 0 0, Quaternion 1 (V3 0 0 0))
+        , (V3 3 0 0, Quaternion 1 (V3 0 0 0))
+        ]
+
   return StateData
-    { ship = (shipBO, length $ loTriangles lobj)
-    , proj = GLU.projectionMatrix (pi/2) (800 / 600) 1 (-1)
-    , view = lookAt (V3 0 2 0) (V3 0 0 (-4)) (V3 0 1 0)
-    , model = V3 0 0 (-5)
+    { ships = shipList
+    , proj = perspective (pi/2) (1600 / 900) 1 (-1)
+    , camera = Camera
+      { cameraFocus = V3 0 0 0
+      , cameraRot = Quaternion (-1) (V3 0 0 0)
+      , cameraDist = (-10)
+      }
     , program = p
-    , mrot = Quaternion 1 (V3 0 0 0)
     }
 
 loadTex :: FilePath -> IO GL.TextureObject
@@ -147,13 +167,23 @@ update _ = return ()
 
 draw :: Affection StateData ()
 draw = do
-  GL.viewport $= (GL.Position 0 0, GL.Size 800 600)
-  (StateData (shipbo, slen) p v m s rot) <- getAffection
-  let pvm = p !*! v !*! mkTransformation rot m
-  liftIO $ GLU.setUniform s "mvp" pvm
-  GL.currentProgram $= (Just . GLU.program $ s)
-  GL.bindVertexArrayObject $= Just shipbo
-  liftIO $ GL.drawArrays GL.Triangles 0 (fromIntegral slen)
+  GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
+  (StateData{..}) <- getAffection
+  GL.currentProgram $= (Just . GLU.program $ program)
+  mapM_ (\(Ship{..}) -> do
+    let view = lookAt
+          (cameraFocus camera +
+            (L.rotate
+            (cameraRot camera)
+            (V3 0 0 (-cameraDist camera))))
+          (cameraFocus camera)
+          (V3 0 1 0)
+        model = mkTransformation shipRot shipPos
+        pvm = proj !*! view !*! model
+    liftIO $ GLU.setUniform program "mvp" pvm
+    GL.bindVertexArrayObject $= Just shipVao
+    liftIO $ GL.drawArrays GL.Triangles 0 (fromIntegral shipVaoLen)
+    ) ships
 
 handle :: SDL.EventPayload -> Affection StateData ()
 handle (SDL.WindowClosedEvent _) = quit
@@ -162,6 +192,27 @@ handle (SDL.KeyboardEvent dat) = do
   let key = SDL.keysymKeycode (SDL.keyboardEventKeysym dat)
   when (SDL.keyboardEventKeyMotion dat == SDL.Pressed) $
     handleKey key
+
+handle (SDL.MouseMotionEvent dat) = do
+  sd <- getAffection
+  let (V2 rx ry) = fmap fromIntegral $ SDL.mouseMotionEventRelMotion dat
+      c = camera sd
+  putAffection sd
+    { camera =
+      case SDL.mouseMotionEventState dat of
+        [SDL.ButtonRight] ->
+          c {cameraFocus = cameraFocus c + V3 (rx / 10) 0 (ry / 10)}
+        [] ->
+          let dphi = pi / 2 / 45 / 2
+          in  c
+            { cameraRot =
+              cameraRot c * axisAngle
+                (normalize $ V3 (- ry) (- rx) 0)
+                dphi
+            }
+        _ ->
+          c
+    }
 
 handle _ = return ()
 
@@ -196,7 +247,8 @@ handleKey code
     ]
     = do
       sd <- getAffection
-      let rot = mrot sd
+      let ship = ships sd !! 0
+          rot = shipRot ship
           dphi = pi / 2 / 45
           nquat = case code of
             SDL.KeycodeW -> rot * axisAngle (V3 1 0 0) (-dphi)
@@ -207,7 +259,9 @@ handleKey code
             SDL.KeycodeQ -> rot * axisAngle (V3 0 0 1) dphi
             _            -> rot
       putAffection sd
-        { mrot = nquat
+        { ships = ship
+          { shipRot = nquat
+          } : tail (ships sd)
         }
   | otherwise =
     return ()
