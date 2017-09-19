@@ -10,21 +10,20 @@ import qualified SDL
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GLUtil as GLU
 
+import Physics.Bullet.Raw
+
 import Control.Monad (when)
-
-import qualified Data.ByteString as BS
-
-import Codec.Wavefront
 
 import Linear as L
 
 import System.Random (randomRIO)
 
-import Foreign
+import SpatialMath
 
-import Util
+import Init
+import Types
 
-import Debug.Trace
+import Debug.Trace as T
 
 main :: IO ()
 main =
@@ -47,123 +46,27 @@ main =
     , canvasSize = Nothing
     }
 
-data StateData = StateData
-  { ships :: [Ship]
-  , camera :: Camera
-  , proj :: M44 Float
-  -- , look :: V3 Float
-  -- , view :: M44 Float
-  , program :: GLU.ShaderProgram
-  }
-
-data Ship = Ship
-  { shipVao    :: GL.VertexArrayObject
-  , shipVaoLen :: Int
-  , shipPos    :: V3 Float
-  , shipRot    :: Quaternion Float
-  }
-
-data Camera = Camera
-  { cameraFocus :: V3 Float
-  , cameraRot :: Quaternion Float
-  , cameraDist :: Float
-  }
-
-load :: IO StateData
-load = do
-  _ <- SDL.setMouseLocationMode SDL.RelativeLocation
-  GL.depthFunc $= Just GL.Less
-  eobj <- fromFile "assets/ships/jaeger/jaeger.obj"
-  let obj = case eobj of
-        Right o -> o
-        Left err -> error err
-  -- (ptr, len) <- objLocsToPtr obj
-  -- (tptr, tlen) <- objUVsToPtr obj
-  let lobj = loadObj obj
-
-  shipBO <- GL.genObjectName
-  GL.bindVertexArrayObject $= Just shipBO
-
-  verts <- GL.genObjectName
-  GL.bindBuffer GL.ArrayBuffer $= Just verts
-  withArray (loTriangles lobj) $ \ptr ->
-    GL.bufferData GL.ArrayBuffer $=
-      ( fromIntegral $ length (loTriangles lobj) * 3 * sizeOf (0 :: Double)
-      , ptr
-      , GL.StaticDraw
-      )
-  GL.vertexAttribPointer (GL.AttribLocation 0) $=
-    ( GL.ToFloat
-    , GL.VertexArrayDescriptor 4 GL.Float 0 (plusPtr nullPtr 0)
-    )
-  GL.vertexAttribArray (GL.AttribLocation 0) $= GL.Enabled
-
-  texture <- GL.genObjectName
-  GL.bindBuffer GL.ArrayBuffer $= Just texture
-  maybe (return ()) (\a -> withArray a $ \ptr ->
-    GL.bufferData GL.ArrayBuffer $=
-      ( fromIntegral $ length a * 2 * sizeOf (0 :: Double)
-      , ptr
-      , GL.StaticDraw
-      )) (loTexTri lobj)
-  GL.vertexAttribPointer (GL.AttribLocation 1) $=
-    ( GL.ToFloat
-    , GL.VertexArrayDescriptor 2 GL.Float 0 (plusPtr nullPtr 0)
-    )
-  GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Enabled
-
-  GL.texture GL.Texture2D $= GL.Enabled
-  GL.activeTexture $= GL.TextureUnit 0
-  t <- loadTex "assets/ships/jaeger/jaeger.texture.tga"
-  GL.textureBinding GL.Texture2D $= Just t
-
-  let vertexShader = foldl BS.append BS.empty
-        [ "attribute vec3 coord3d;"
-        , "attribute vec2 texcoord;"
-        , "uniform mat4 mvp;"
-        , "varying vec2 f_texcoord;"
-        , "void main(void) {"
-        , "  gl_Position = mvp * vec4(coord3d, 1.0);"
-        , "  f_texcoord = texcoord;"
-        , "}"
-        ]
-      fragmentShader = foldl BS.append BS.empty
-        [ "varying vec2 f_texcoord;"
-        , "uniform sampler2D texture;"
-        , "void main(void) {"
-        -- , "  gl_FragColor = vec4(color, 1.0);"
-        -- , "  gl_FragColor = vec4(1.0);"
-        , "  vec2 flip = vec2(f_texcoord.x, 1.0 - f_texcoord.y);"
-        , "  gl_FragColor = texture2D(texture, flip);"
-        , "}"
-        ]
-  p <- GLU.simpleShaderProgramBS vertexShader fragmentShader
-
-  let shipList = map (uncurry $ Ship shipBO (length $ loTriangles lobj))
-        [ (V3 (-3) 0 0, Quaternion 1 (V3 0 0 0))
-        , (V3 3 0 0, Quaternion 1 (V3 0 0 0))
-        ]
-
-  return StateData
-    { ships = shipList
-    , proj = perspective (pi/2) (1600 / 900) 1 (-1)
-    , camera = Camera
-      { cameraFocus = V3 0 0 0
-      , cameraRot = Quaternion (-1) (V3 0 0 0)
-      , cameraDist = (-10)
-      }
-    , program = p
-    }
-
-loadTex :: FilePath -> IO GL.TextureObject
-loadTex f = do
-  t <- either error id <$> GLU.readTexture f
-  GL.textureFilter GL.Texture2D $= ((GL.Linear', Nothing), GL.Linear')
-  GLU.texture2DWrap $= (GL.Repeated, GL.ClampToEdge)
-  return t
-
 update :: Double -> Affection StateData ()
-update _ = return ()
+update dt = do
+  sd <- getAffection
+  let phys = physics sd
+      physos = physicsObjects sd
+  liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
+  posrots <- mapM (\ball -> do
+    ms <- liftIO $ getMotionState ball
+    npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
+    nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+    return (npos, nrot)
+    ) (map bodyRigidBody $ poBalls physos)
+  let nships = map (\(ship, (pos, rot)) ->
+        ship
+          { shipRot = rot
+          , shipPos = pos
+          }
+        ) (zip (ships sd) posrots)
+  putAffection sd
+    { ships = nships
+    }
 
 draw :: Affection StateData ()
 draw = do
@@ -173,7 +76,7 @@ draw = do
   mapM_ (\(Ship{..}) -> do
     let view = lookAt
           (cameraFocus camera +
-            (L.rotate
+            (rotVecByEulerB2A
             (cameraRot camera)
             (V3 0 0 (-cameraDist camera))))
           (cameraFocus camera)
@@ -192,7 +95,6 @@ handle (SDL.KeyboardEvent dat) = do
   let key = SDL.keysymKeycode (SDL.keyboardEventKeysym dat)
   when (SDL.keyboardEventKeyMotion dat == SDL.Pressed) $
     handleKey key
-
 handle (SDL.MouseMotionEvent dat) = do
   sd <- getAffection
   let (V2 rx ry) = fmap fromIntegral $ SDL.mouseMotionEventRelMotion dat
@@ -201,14 +103,26 @@ handle (SDL.MouseMotionEvent dat) = do
     { camera =
       case SDL.mouseMotionEventState dat of
         [SDL.ButtonRight] ->
-          c {cameraFocus = cameraFocus c + V3 (rx / 10) 0 (ry / 10)}
+          let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
+          in  c {cameraFocus = cameraFocus c + V3 (sx) 0 (sy)}
         [] ->
-          let dphi = pi / 2 / 45 / 2
+          let dphi = pi / 4 / 45 / 10
+              (Euler yaw pitch roll) = cameraRot c
+              nangle
+                | nangle' >= qc = qc - mu
+                | nangle' <= -qc = -qc + mu
+                | otherwise     = nangle'
+                where
+                  nangle' = (dphi * ry) + roll
+                  qc = pi / 2
+                  mu = 0.01
+              nrot =
+                Euler
+                  yaw
+                  (pitch + (rx * dphi))
+                  nangle
           in  c
-            { cameraRot =
-              cameraRot c * axisAngle
-                (normalize $ V3 (- ry) (- rx) 0)
-                dphi
+            { cameraRot = nrot
             }
         _ ->
           c

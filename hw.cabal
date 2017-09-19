@@ -18,12 +18,15 @@ cabal-version:       >=1.10
 executable hw
   main-is:             Main.hs
   other-modules:       Util
+                     , Types
+                     , Init
   -- other-extensions:    
   default-extensions:  OverloadedStrings
-  build-depends:       base >=4.9 && <4.10
+  build-depends:       base >=4.9
                      , affection
                      , sdl2
                      , linear
+                     , spatial-math
                      , bytestring
                      , OpenGL
                      , OpenGLRaw
@@ -31,6 +34,8 @@ executable hw
                      , random
                      , vector
                      , wavefront
+                     , shoot
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
+  extra-libraries:     stdc++
