@@ -146,7 +146,7 @@ initPhysics = do
 initPhysicsObjects :: [V3 Float] -> IO PhysicsObjects
 initPhysicsObjects poss = do
   ground <- newStaticPlaneShape (V3 0 1 0) 1
-  ball <- newSphereShape 1
+  ball <- newSphereShape 3
 
   groundMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0)) (V3 0 (-51) 0)
   groundBody <- newRigidBody 0 groundMotionState 0.9 0.5 ground (V3 0 0 0)
