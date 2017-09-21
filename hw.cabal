@@ -39,3 +39,35 @@ executable hw
   default-language:    Haskell2010
   ghc-options:         -Wall
   extra-libraries:     stdc++
+
+flag examples
+  description:         Build testing examples
+  default:             False
+
+executable example00
+  main-is:             Main.hs
+  other-modules:       Util
+                     , Types
+                     , Init
+  -- other-extensions:    
+  default-extensions:  OverloadedStrings
+  if flag(examples)
+    build-depends:       base >=4.9
+                       , affection
+                       , sdl2
+                       , linear
+                       , spatial-math
+                       , bytestring
+                       , OpenGL
+                       , OpenGLRaw
+                       , GLUtil
+                       , random
+                       , vector
+                       , wavefront
+                       , shoot
+  else
+    buildable:           False
+  hs-source-dirs:      examples/example00
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  extra-libraries:     stdc++

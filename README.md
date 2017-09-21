@@ -16,3 +16,9 @@ you will need some unstable libraries in your sandbox:
 * [babl](https://github.com/nek0/babl)
 
 all other dependencies should be installable through cabal.
+
+## Building end Executing
+
+invoke `cabal build` and ignore the warnings…
+
+The latest experiment can be seen by invoking `./dist/build/hw/hw`
