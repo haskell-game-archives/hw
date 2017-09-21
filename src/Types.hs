@@ -12,7 +12,7 @@ import SpatialMath
 import Physics.Bullet.Raw as Bullet
 
 data StateData = StateData
-  { ships :: [Ship]
+  { ship :: Ship
   , camera :: Camera
   , proj :: M44 Float
   , program :: GLU.ShaderProgram
@@ -42,8 +42,8 @@ data Physics = Physics
   }
 
 data PhysicsObjects = PhysicsObjects
-  { poGround :: PhysBody StaticPlaneShape
-  , poBalls  :: [PhysBody SphereShape]
+  -- { poGround :: PhysBody StaticPlaneShape
+  { poBall   :: PhysBody SphereShape
   }
 
 data PhysBody a = PhysBody

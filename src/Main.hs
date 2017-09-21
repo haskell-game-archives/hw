@@ -52,20 +52,18 @@ update dt = do
   let phys = physics sd
       physos = physicsObjects sd
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
-  posrots <- mapM (\ball -> do
-    ms <- liftIO $ getMotionState ball
+  (pos, rot) <- do
+    ms <- liftIO $ getMotionState (bodyRigidBody $ poBall physos)
     npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
     nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
     return (npos, nrot)
-    ) (map bodyRigidBody $ poBalls physos)
-  let nships = map (\(ship, (pos, rot)) ->
-        ship
+  let nship =
+        (ship sd)
           { shipRot = rot
           , shipPos = pos
           }
-        ) (zip (ships sd) posrots)
   putAffection sd
-    { ships = nships
+    { ship = nship
     }
 
 draw :: Affection StateData ()
@@ -73,7 +71,7 @@ draw = do
   GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
   (StateData{..}) <- getAffection
   GL.currentProgram $= (Just . GLU.program $ program)
-  mapM_ (\(Ship{..}) -> do
+  (\(Ship{..}) -> do
     let view = lookAt
           (cameraFocus camera +
             (rotVecByEulerB2A
@@ -86,7 +84,7 @@ draw = do
     liftIO $ GLU.setUniform program "mvp" pvm
     GL.bindVertexArrayObject $= Just shipVao
     liftIO $ GL.drawArrays GL.Triangles 0 (fromIntegral shipVaoLen)
-    ) ships
+    ) ship
 
 handle :: SDL.EventPayload -> Affection StateData ()
 handle (SDL.WindowClosedEvent _) = quit
@@ -161,21 +159,20 @@ handleKey code
     ]
     = do
       sd <- getAffection
-      let ship = ships sd !! 0
-          rot = shipRot ship
-          dphi = pi / 2 / 45
-          nquat = case code of
-            SDL.KeycodeW -> rot * axisAngle (V3 1 0 0) (-dphi)
-            SDL.KeycodeS -> rot * axisAngle (V3 1 0 0) dphi
-            SDL.KeycodeA -> rot * axisAngle (V3 0 1 0) (-dphi)
-            SDL.KeycodeD -> rot * axisAngle (V3 0 1 0) dphi
-            SDL.KeycodeE -> rot * axisAngle (V3 0 0 1) (-dphi)
-            SDL.KeycodeQ -> rot * axisAngle (V3 0 0 1) dphi
-            _            -> rot
-      putAffection sd
-        { ships = ship
-          { shipRot = nquat
-          } : tail (ships sd)
-        }
+      let body = (bodyRigidBody $ poBall $ physicsObjects sd)
+      ms <- liftIO $ getMotionState body
+      rot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+      let tor = 5
+          torqueimp = case code of
+            SDL.KeycodeW -> rotate rot (V3 (-tor) 0 0) -- (-dphi)
+            SDL.KeycodeS -> rotate rot (V3 tor 0 0) -- dphi
+            SDL.KeycodeA -> rotate rot (V3 0 (-tor) 0) -- (-dphi)
+            SDL.KeycodeD -> rotate rot (V3 0 tor 0) -- dphi
+            SDL.KeycodeE -> rotate rot (V3 0 0 (-tor)) -- (-dphi)
+            SDL.KeycodeQ -> rotate rot (V3 0 0 tor) -- dphi
+            _            -> (V3 0 0 0)
+      liftIO $ applyTorque
+        (bodyRigidBody $ poBall $ physicsObjects sd)
+        torqueimp
   | otherwise =
     return ()

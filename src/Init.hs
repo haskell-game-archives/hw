@@ -10,8 +10,6 @@ import qualified Graphics.GLUtil as GLU
 
 import qualified Data.ByteString as BS
 
-import System.Random (randomRIO)
-
 import Physics.Bullet.Raw
 
 import Codec.Wavefront
@@ -93,33 +91,22 @@ load = do
         ]
   p <- GLU.simpleShaderProgramBS vertexShader fragmentShader
 
-  poss <- mapM (\_ -> do
-    x <- randomRIO (-50, 50)
-    y <- randomRIO (-50, 50)
-    z <- randomRIO (-50, 50)
-    return (V3 x y z)
-    ) [0..2000]
-
-  let shipList = map (uncurry $ Ship shipBO (length $ loTriangles lobj)) $
-        zip poss (repeat $ Quaternion 1 (V3 0 0 0))
-        -- [ (V3 0 0 0, Quaternion 1 (V3 0 0 0))
-        -- -- , (V3 3 0 0, Quaternion 1 (V3 0 0 0))
-        -- ]
-
   phys <- initPhysics
 
-  po <- initPhysicsObjects poss
+  po <- initPhysicsObjects
 
-  mapM_ (addRigidBody (pWorld phys)) (map bodyRigidBody (poBalls po))
-  addRigidBody (pWorld phys) (bodyRigidBody $ poGround po)
+  -- mapM_ (addRigidBody (pWorld phys)) (map bodyRigidBody (poBalls po))
+  addRigidBody (pWorld phys) (bodyRigidBody $ poBall po)
 
   return StateData
-    { ships = shipList
+    { ship = Ship shipBO (length $ loTriangles lobj)
+      (V3 0 0 0)
+      (Quaternion 1 (V3 0 0 0))
     , proj = perspective (pi/2) (1600 / 900) 1 (-1)
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
-      , cameraDist = (-50)
+      , cameraDist = (-10)
       }
     , program = p
     , physics = phys
@@ -140,26 +127,26 @@ initPhysics = do
   disp <- newCollisionDispatcher config
   solver <- newSequentialImpulseConstraintSolver
   world <- newDiscreteDynamicsWorld disp bp solver config
-  setGravity world (V3 0 (-10) 0)
+  setGravity world (V3 0 0 0)
   return $ Physics bp config disp solver world
 
-initPhysicsObjects :: [V3 Float] -> IO PhysicsObjects
-initPhysicsObjects poss = do
-  ground <- newStaticPlaneShape (V3 0 1 0) 1
+initPhysicsObjects :: IO PhysicsObjects
+initPhysicsObjects = do
+  -- ground <- newStaticPlaneShape (V3 0 1 0) 1
   ball <- newSphereShape 3
 
-  groundMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0)) (V3 0 (-51) 0)
-  groundBody <- newRigidBody 0 groundMotionState 0.9 0.5 ground (V3 0 0 0)
+  -- groundMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0)) (V3 0 (-51) 0)
+  -- groundBody <- newRigidBody 0 groundMotionState 0.9 0.5 ground (V3 0 0 0)
 
-  balls <- mapM (\pos -> do
-    ballMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
-      (fmap realToFrac pos)
-    localInertia <- calculateLocalInertia ball 1 (V3 0 0 0)
-    ballBody <- newRigidBody 1 ballMotionState 0.9 0.5 ball localInertia
-    return $ PhysBody ball ballMotionState ballBody
-    ) poss
+  -- balls <- mapM (\pos -> do
+  ballMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
+    (V3 0 0 0)
+  localInertia <- calculateLocalInertia ball 1 (V3 0 0 0)
+  ballBody <- newRigidBody 1 ballMotionState 0 0 ball localInertia
+  setSleepingThresholds ballBody 0 0
+  -- ) poss
 
   return PhysicsObjects
-    { poGround = PhysBody ground groundMotionState groundBody
-    , poBalls  = balls
+    -- { poGround = PhysBody ground groundMotionState groundBody
+    { poBall  = PhysBody ball ballMotionState ballBody
     }
