@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Init where
 
@@ -100,17 +100,15 @@ load = do
     return (V3 x y z)
     ) [0..2000]
 
-  let shipList = map (uncurry $ Ship shipBO (length $ loTriangles lobj)) $
-        zip poss (repeat $ Quaternion 1 (V3 0 0 0))
-        -- [ (V3 0 0 0, Quaternion 1 (V3 0 0 0))
-        -- -- , (V3 3 0 0, Quaternion 1 (V3 0 0 0))
-        -- ]
+  let shipList = zipWith (uncurry $ Ship shipBO (length $ loTriangles lobj))
+        poss
+        (repeat $ Quaternion 1 (V3 0 0 0))
 
   phys <- initPhysics
 
   po <- initPhysicsObjects poss
 
-  mapM_ (addRigidBody (pWorld phys)) (map bodyRigidBody (poBalls po))
+  mapM_ (addRigidBody (pWorld phys)) . bodyRigidBody) (poBalls po)
   addRigidBody (pWorld phys) (bodyRigidBody $ poGround po)
 
   return StateData
@@ -119,7 +117,7 @@ load = do
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
-      , cameraDist = (-50)
+      , cameraDist = -50
       }
     , program = p
     , physics = phys

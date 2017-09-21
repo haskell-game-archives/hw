@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Init where
 
@@ -106,7 +106,7 @@ load = do
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
-      , cameraDist = (-10)
+      , cameraDist = -10
       }
     , program = p
     , physics = phys

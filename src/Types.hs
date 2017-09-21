@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
-
 module Types where
 
 import qualified Graphics.Rendering.OpenGL as GL

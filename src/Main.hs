@@ -54,8 +54,8 @@ update dt = do
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
   (pos, rot) <- do
     ms <- liftIO $ getMotionState (bodyRigidBody $ poBall physos)
-    npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
-    nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+    npos <- liftIO $ fmap (fmap realToFrac) =<< getPosition ms
+    nrot <- liftIO $ fmap (fmap realToFrac) =<< getRotation ms
     return (npos, nrot)
   let nship =
         (ship sd)
@@ -69,14 +69,14 @@ update dt = do
 draw :: Affection StateData ()
 draw = do
   GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
-  (StateData{..}) <- getAffection
+  StateData{..} <- getAffection
   GL.currentProgram $= (Just . GLU.program $ program)
-  (\(Ship{..}) -> do
+  (\Ship{..} -> do
     let view = lookAt
           (cameraFocus camera +
-            (rotVecByEulerB2A
+            rotVecByEulerB2A
             (cameraRot camera)
-            (V3 0 0 (-cameraDist camera))))
+            (V3 0 0 (-cameraDist camera)))
           (cameraFocus camera)
           (V3 0 1 0)
         model = mkTransformation shipRot shipPos
@@ -95,14 +95,14 @@ handle (SDL.KeyboardEvent dat) = do
     handleKey key
 handle (SDL.MouseMotionEvent dat) = do
   sd <- getAffection
-  let (V2 rx ry) = fmap fromIntegral $ SDL.mouseMotionEventRelMotion dat
+  let (V2 rx ry) = fromIntegral <$> SDL.mouseMotionEventRelMotion dat
       c = camera sd
   putAffection sd
     { camera =
       case SDL.mouseMotionEventState dat of
         [SDL.ButtonRight] ->
           let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
-          in  c {cameraFocus = cameraFocus c + V3 (sx) 0 (sy)}
+          in  c {cameraFocus = cameraFocus c + V3 sx 0 sy}
         [] ->
           let dphi = pi / 4 / 45 / 10
               (Euler yaw pitch roll) = cameraRot c
@@ -159,9 +159,9 @@ handleKey code
     ]
     = do
       sd <- getAffection
-      let body = (bodyRigidBody $ poBall $ physicsObjects sd)
+      let body = bodyRigidBody $ poBall $ physicsObjects sd
       ms <- liftIO $ getMotionState body
-      rot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+      rot <- liftIO $ fmap (fmap realToFrac) =<< getRotation ms
       let tor = 5
           torqueimp = case code of
             SDL.KeycodeW -> rotate rot (V3 (-tor) 0 0) -- (-dphi)
@@ -170,7 +170,7 @@ handleKey code
             SDL.KeycodeD -> rotate rot (V3 0 tor 0) -- dphi
             SDL.KeycodeE -> rotate rot (V3 0 0 (-tor)) -- (-dphi)
             SDL.KeycodeQ -> rotate rot (V3 0 0 tor) -- dphi
-            _            -> (V3 0 0 0)
+            _            -> V3 0 0 0
       liftIO $ applyTorque
         (bodyRigidBody $ poBall $ physicsObjects sd)
         torqueimp
