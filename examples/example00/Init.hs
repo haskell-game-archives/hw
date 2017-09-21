@@ -100,7 +100,7 @@ load = do
     return (V3 x y z)
     ) [0..2000]
 
-  let shipList = zipWith (uncurry $ Ship shipBO (length $ loTriangles lobj))
+  let shipList = zipWith (Ship shipBO (length $ loTriangles lobj))
         poss
         (repeat $ Quaternion 1 (V3 0 0 0))
 
@@ -108,7 +108,7 @@ load = do
 
   po <- initPhysicsObjects poss
 
-  mapM_ (addRigidBody (pWorld phys)) . bodyRigidBody) (poBalls po)
+  mapM_ (addRigidBody (pWorld phys) . bodyRigidBody) (poBalls po)
   addRigidBody (pWorld phys) (bodyRigidBody $ poGround po)
 
   return StateData

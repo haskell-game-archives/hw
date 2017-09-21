@@ -54,8 +54,8 @@ update dt = do
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
   posrots <- mapM ((\ball -> do
     ms <- liftIO $ getMotionState ball
-    npos <- liftIO $ fmap (fmap realToFrac) =<< getPosition ms
-    nrot <- liftIO $ fmap (fmap realToFrac) =<< getRotation ms
+    npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
+    nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
     return (npos, nrot))
     . bodyRigidBody) (poBalls physos)
   let nships = map (\(ship, (pos, rot)) ->

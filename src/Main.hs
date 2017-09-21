@@ -54,8 +54,8 @@ update dt = do
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
   (pos, rot) <- do
     ms <- liftIO $ getMotionState (bodyRigidBody $ poBall physos)
-    npos <- liftIO $ fmap (fmap realToFrac) =<< getPosition ms
-    nrot <- liftIO $ fmap (fmap realToFrac) =<< getRotation ms
+    npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
+    nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
     return (npos, nrot)
   let nship =
         (ship sd)
@@ -161,7 +161,7 @@ handleKey code
       sd <- getAffection
       let body = bodyRigidBody $ poBall $ physicsObjects sd
       ms <- liftIO $ getMotionState body
-      rot <- liftIO $ fmap (fmap realToFrac) =<< getRotation ms
+      rot <- liftIO $ return . fmap realToFrac =<< getRotation ms
       let tor = 5
           torqueimp = case code of
             SDL.KeycodeW -> rotate rot (V3 (-tor) 0 0) -- (-dphi)
