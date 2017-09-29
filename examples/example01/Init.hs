@@ -102,7 +102,7 @@ load = do
     { ship = Ship shipBO (length $ loTriangles lobj)
       (V3 0 0 0)
       (Quaternion 1 (V3 0 0 0))
-    -- , proj = perspective (pi/2) (1600 / 900) 1 (-1)
+    , proj = perspective (pi/2) (1600 / 900) 1 (-1)
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
@@ -111,7 +111,6 @@ load = do
     , program = p
     , physics = phys
     , physicsObjects = po
-    , projection = Perspective (perspective (pi/2) (1600 / 900) 1 (-1))
     }
 
 loadTex :: FilePath -> IO GL.TextureObject

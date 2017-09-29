@@ -12,11 +12,10 @@ import Physics.Bullet.Raw as Bullet
 data StateData = StateData
   { ship :: Ship
   , camera :: Camera
-  -- , proj :: M44 Float
+  , proj :: M44 Float
   , program :: GLU.ShaderProgram
   , physics :: Physics
   , physicsObjects :: PhysicsObjects
-  , projection :: Projection
   }
 
 data Ship = Ship
@@ -50,5 +49,3 @@ data PhysBody a = PhysBody
   , bodyMotionState :: MotionState
   , bodyRigidBody   :: RigidBody
   }
-
-data Projection = Ortho (M44 Float) | Perspective (M44 Float)

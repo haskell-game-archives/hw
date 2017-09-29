@@ -71,9 +71,6 @@ draw = do
   GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
   StateData{..} <- getAffection
   GL.currentProgram $= (Just . GLU.program $ program)
-  let proj = case projection of
-        Ortho m -> m
-        Perspective m -> m
   (\Ship{..} -> do
     let view = lookAt
           (cameraFocus camera +
@@ -152,16 +149,30 @@ handleKey code
     liftIO $ putStrLn $ show (1 / dt) ++ " FPS"
   | code == SDL.KeycodeT =
     toggleScreen
-  | code == SDL.KeycodeO =
-    toggleOrtho
+  | code `elem`
+    [ SDL.KeycodeW
+    , SDL.KeycodeS
+    , SDL.KeycodeA
+    , SDL.KeycodeD
+    , SDL.KeycodeQ
+    , SDL.KeycodeE
+    ]
+    = do
+      sd <- getAffection
+      let body = bodyRigidBody $ poBall $ physicsObjects sd
+      ms <- liftIO $ getMotionState body
+      rot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+      let tor = 5
+          torqueimp = case code of
+            SDL.KeycodeW -> rotate rot (V3 (-tor) 0 0) -- (-dphi)
+            SDL.KeycodeS -> rotate rot (V3 tor 0 0) -- dphi
+            SDL.KeycodeA -> rotate rot (V3 0 (-tor) 0) -- (-dphi)
+            SDL.KeycodeD -> rotate rot (V3 0 tor 0) -- dphi
+            SDL.KeycodeE -> rotate rot (V3 0 0 (-tor)) -- (-dphi)
+            SDL.KeycodeQ -> rotate rot (V3 0 0 tor) -- dphi
+            _            -> V3 0 0 0
+      liftIO $ applyTorqueImpulse
+        (bodyRigidBody $ poBall $ physicsObjects sd)
+        torqueimp
   | otherwise =
     return ()
-
-toggleOrtho :: Affection StateData ()
-toggleOrtho = do
-  sd <- getAffection
-  case projection sd of
-    Ortho _ -> putAffection sd
-      { projection = Perspective (perspective (pi/2) (1600 / 900) 1 (-1)) }
-    Perspective _ -> putAffection sd
-      { projection = Ortho (ortho (-10) 10 (-5) 5 (-50) 50) }
