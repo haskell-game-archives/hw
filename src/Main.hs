@@ -13,6 +13,7 @@ import qualified Graphics.GLUtil as GLU
 import Physics.Bullet.Raw
 
 import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO)
 
 import Linear as L
 
@@ -31,9 +32,9 @@ main =
     { initComponents = All
     , windowTitle    = "hw"
     , windowConfig   = SDL.defaultWindow
-      { windowInitialSize = SDL.V2 1600 900
-      , windowOpenGL = Just SDL.defaultOpenGL
-        { SDL.glProfile = SDL.Core SDL.Normal 3 2
+      { SDL.windowInitialSize = SDL.V2 1600 900
+      , SDL.windowOpenGL = Just SDL.defaultOpenGL
+        { SDL.glProfile = SDL.Core SDL.Normal 3 3
         }
       }
     , initScreenMode = SDL.Fullscreen
