@@ -124,7 +124,7 @@ initPhysics = do
   disp <- newCollisionDispatcher config
   solver <- newSequentialImpulseConstraintSolver
   world <- newDiscreteDynamicsWorld disp bp solver config
-  setGravity world (V3 0 (-10) 0)
+  setGravity world (V3 0 0 0)
   return $ Physics bp config disp solver world
 
 initPhysicsObjects :: [V3 Float] -> IO PhysicsObjects

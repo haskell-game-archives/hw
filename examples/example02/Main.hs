@@ -52,19 +52,20 @@ update dt = do
   sd <- getAffection
   let phys = physics sd
       physos = physicsObjects sd
-  -- mapM_ (\smallBall -> do
-  --   ms1 <- liftIO $ getMotionState (bodyRigidBody smallBall)
-  --   ms2 <- liftIO $ getMotionState (bodyRigidBody $ poBigBall physos)
-  --   r1 <- liftIO $ return . fmap realToFrac =<< getPosition ms1
-  --   r2 <- liftIO $ return . fmap realToFrac =<< getPosition ms2
-  --   let g = 0.0000000000667300
-  --       m1 = bodyMass smallBall
-  --       m2 = bodyMass (poBigBall physos)
-  --       eta_sq = 0.1 ^ 2
-  --       force = (g * m1 * m2 *^ (r1 - r2)) ^/
-  --         (((r1 - r2) `dot` (r1 - r2)) + eta_sq)
-  --   liftIO $ applyCentralForce (bodyRigidBody smallBall) force
-  --   ) (poSmallBalls physos)
+  mapM_ (\smallBall -> do
+    ms1 <- liftIO $ getMotionState (bodyRigidBody smallBall)
+    ms2 <- liftIO $ getMotionState (bodyRigidBody $ poBigBall physos)
+    r1 <- liftIO $ return . fmap realToFrac =<< getPosition ms1
+    r2 <- liftIO $ return . fmap realToFrac =<< getPosition ms2
+    let g = 0.0000000000667300
+        m1 = bodyMass smallBall
+        -- m2 = bodyMass (poBigBall physos)
+        m2 = 1000000000000000
+        eta_sq = 0.1 ^ 2
+        force = (g * m2 * m1 *^ (r2 - r1)) ^/
+          ((sqrt (((r2 - r1) `dot` (r2 - r1)) + eta_sq)) ^ 3)
+    liftIO $ applyCentralForce (bodyRigidBody smallBall) force
+    ) (poSmallBalls physos)
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
   posrots <- mapM ((\ball -> do
     ms <- liftIO $ getMotionState ball
