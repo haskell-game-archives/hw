@@ -96,3 +96,28 @@ executable example01
   default-language:    Haskell2010
   ghc-options:         -Wall
   extra-libraries:     stdc++
+
+executable example02
+  main-is:             Main.hs
+  other-modules:       Util
+                     , Types
+                     , Init
+  -- other-extensions:    
+  default-extensions:  OverloadedStrings
+  build-depends:       base >=4.9
+                     , affection
+                     , sdl2
+                     , linear
+                     , spatial-math
+                     , bytestring
+                     , OpenGL
+                     , OpenGLRaw
+                     , GLUtil
+                     , random
+                     , vector
+                     , wavefront
+                     , shoot
+  hs-source-dirs:      examples/example02
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  extra-libraries:     stdc++
