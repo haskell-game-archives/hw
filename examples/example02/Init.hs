@@ -103,7 +103,7 @@ load = do
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
-      , cameraDist = -50
+      , cameraDist = -100
       }
     , program = p
     , physics = phys
