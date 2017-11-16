@@ -11,12 +11,14 @@ import qualified Graphics.GLUtil as GLU
 
 import qualified Data.Vector as V
 
+import Debug.Trace
+
 data LoadedObject = LoadedObject
   { loTriangles :: [Float]
   , loLines     :: [Float]
   , loPoints    :: [Float]
   , loTexTri    :: Maybe [Float]
-  }
+  } deriving (Show)
 
 loadObj :: WavefrontOBJ -> LoadedObject
 loadObj obj =
@@ -26,7 +28,8 @@ loadObj obj =
     interTex = objTexCoords obj
     faces = map elValue (V.toList $ objFaces obj)
     lns = map elValue (V.toList $ objLines obj)
-    points = map elValue (V.toList $ objPoints obj)
+    points = trace (show $ map elValue (V.toList $ objPoints obj))
+      (map elValue (V.toList $ objPoints obj))
     deface (Face a b c []) =
       map (\i -> inter V.! (faceLocIndex i -1)) [a, b, c]
     deface _ =
@@ -36,7 +39,7 @@ loadObj obj =
     depoint (Point i) = inter V.! (i - 1)
     tsLocs = concatMap deface faces
     lsLocs = concatMap deline lns
-    psLocs = map depoint points
+    psLocs = map depoint (trace (show points) points)
     deLoc (Location x y z w) = [x, y, z, w]
     deTex (TexCoord r s _) = [r, s]
     ts = concatMap deLoc tsLocs

@@ -26,6 +26,7 @@ data Ship = Ship
   , shipPos     :: V3 Float
   , shipRot     :: Quaternion Float
   , shipTexture :: Maybe GL.TextureObject
+  , shipUVs     :: Maybe GL.BufferObject
   }
 
 data Camera = Camera

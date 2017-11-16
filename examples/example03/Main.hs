@@ -81,18 +81,21 @@ draw =
             (V3 0 0 (-cameraDist camera)))
           (cameraFocus camera)
           (V3 0 1 0)
-    GL.currentProgram $= (Just . GLU.program $ shipProgram)
     drawShip shipProgram view ship
-    GL.currentProgram $= (Just . GLU.program $ handleProgram)
-    mapM_ (drawShip shipProgram view) vertHandles
+    mapM_ (drawShip handleProgram view) vertHandles
   where
     drawShip program view (Ship{..}) = do
       StateData{..} <- getAffection
+      GL.currentProgram $= (Just . GLU.program $ program)
       let model = mkTransformation shipRot shipPos
           pvm = proj !*! view !*! model
       liftIO $ GLU.setUniform program "mvp" pvm
       GL.bindVertexArrayObject $= Just shipVao
+      GL.bindBuffer GL.ArrayBuffer $= shipUVs
       liftIO $ GL.drawArrays GL.Triangles 0 (fromIntegral shipVaoLen)
+      GL.currentProgram $= Nothing
+      GL.bindBuffer GL.ArrayBuffer $= Nothing
+      GL.bindVertexArrayObject $= Nothing
 
 handle :: SDL.EventPayload -> Affection StateData ()
 handle (SDL.WindowClosedEvent _) = quit

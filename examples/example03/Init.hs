@@ -24,14 +24,16 @@ import Foreign
 import Util
 import Types
 
+import Debug.Trace
+
 load :: IO StateData
 load = do
   _ <- SDL.setMouseLocationMode SDL.RelativeLocation
   GL.depthFunc $= Just GL.Less
 
+  svao <- GL.genObjectName
+  GL.bindVertexArrayObject $= Just svao
   (shipBO, sobj, stl) <- genVertBufObject "assets/ships/jaeger/jaeger.obj"
-
-  (vectHandleBO, hobj, vhtl) <- genVertBufObject "assets/spheres/vertHandle.obj"
 
   texture <- GL.genObjectName
   GL.bindBuffer GL.ArrayBuffer $= Just texture
@@ -46,11 +48,19 @@ load = do
     , GL.VertexArrayDescriptor 2 GL.Float 0 (plusPtr nullPtr 0)
     )
   GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Enabled
+  GL.bindBuffer GL.ArrayBuffer $= Nothing
 
   GL.texture GL.Texture2D $= GL.Enabled
   GL.activeTexture $= GL.TextureUnit 0
   t <- loadTex "assets/ships/jaeger/jaeger.texture.tga"
   GL.textureBinding GL.Texture2D $= Just t
+
+  GL.bindVertexArrayObject $= Nothing
+
+  hvao <- GL.genObjectName
+  GL.bindVertexArrayObject $= Just hvao
+  (vectHandleBO, hobj, vhtl) <- genVertBufObject "assets/spheres/vertHandle.obj"
+  GL.bindVertexArrayObject $= Nothing
 
   let vertexShader = foldl BS.append BS.empty
         [ "attribute vec3 coord3d;"
@@ -73,26 +83,29 @@ load = do
       fragmentShaderHandle = foldl BS.append BS.empty
         [ "varying vec2 f_texcoord;"
         , "void main(void) {"
-        , "  gl_FragColor = vec4(0,0,0,0.5);"
+        , "  gl_FragColor = vec4(1.0,0.0,1.0,0.5);"
         , "}"
         ]
 
-  handleProgram <- GLU.simpleShaderProgramBS vertexShader fragmentShaderHandle
-  shipProgram   <- GLU.simpleShaderProgramBS vertexShader fragmentShaderShip
+  hProgram <- GLU.simpleShaderProgramBS vertexShader fragmentShaderHandle
+  sProgram <- GLU.simpleShaderProgramBS vertexShader fragmentShaderShip
 
   phys <- initPhysics
 
   po <- initPhysicsObjects
 
+  -- traceIO $ show $ loLines sobj
+
   -- mapM_ (addRigidBody (pWorld phys)) (map bodyRigidBody (poBalls po))
   addRigidBody (pWorld phys) (bodyRigidBody $ poBall po)
 
   return StateData
-    { ship = Ship shipBO stl
+    { ship = (Ship svao stl
       (V3 0 0 0)
       (Quaternion 1 (V3 0 0 0))
       (Just t)
-    , vertHandles = createHandles vectHandleBO vhtl (loPoints sobj)
+      (Just texture))
+    , vertHandles = createHandles hvao vhtl (loTriangles sobj)
     , proj = perspective (pi/2) (1600 / 900) 1 (-1)
     , camera = Camera
       { cameraFocus = V3 0 0 0
@@ -101,8 +114,8 @@ load = do
       }
     , physics = phys
     , physicsObjects = po
-    , shipProgram = shipProgram
-    , handleProgram = handleProgram
+    , shipProgram = sProgram
+    , handleProgram = hProgram
     }
 
 initPhysics :: IO Physics
@@ -136,7 +149,7 @@ initPhysicsObjects = do
     { poBall  = PhysBody ball ballMotionState ballBody
     }
 
-genVertBufObject :: FilePath -> IO (GL.VertexArrayObject, LoadedObject, Int)
+genVertBufObject :: FilePath -> IO (GL.BufferObject, LoadedObject, Int)
 genVertBufObject path = do
   eobj <- fromFile path
   let obj = case eobj of
@@ -144,11 +157,8 @@ genVertBufObject path = do
         Left err -> error err
       lobj = loadObj obj
 
-  shipBO <- GL.genObjectName
-  GL.bindVertexArrayObject $= Just shipBO
-
-  verts <- GL.genObjectName
-  GL.bindBuffer GL.ArrayBuffer $= Just verts
+  vbo <- GL.genObjectName
+  GL.bindBuffer GL.ArrayBuffer $= Just vbo
   withArray (loTriangles lobj) $ \ptr ->
     GL.bufferData GL.ArrayBuffer $=
       ( fromIntegral $ length (loTriangles lobj) * 3 * sizeOf (0 :: Double)
@@ -160,11 +170,11 @@ genVertBufObject path = do
     , GL.VertexArrayDescriptor 4 GL.Float 0 (plusPtr nullPtr 0)
     )
   GL.vertexAttribArray (GL.AttribLocation 0) $= GL.Enabled
-  return (shipBO, lobj, length (loTriangles lobj))
+  return (vbo, lobj, length (loTriangles lobj))
 
 createHandles :: GL.VertexArrayObject -> Int -> [Float] -> [Ship]
 createHandles bo len ps =
-  map (\p -> Ship bo len (toPos p) (Quaternion 1 (V3 0 0 0)) Nothing) tris
+  map (\p -> Ship bo len (toPos p) (Quaternion 1 (V3 0 0 0)) Nothing Nothing) tris
   where
     tris            = chunksOf 3 ps
     toPos [x, y, z] = V3 x y z
