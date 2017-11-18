@@ -55,18 +55,26 @@ update dt = do
   let phys = physics sd
       physos = physicsObjects sd
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
-  (pos, rot) <- do
-    ms <- liftIO $ getMotionState (bodyRigidBody $ poBall physos)
-    npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
-    nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
-    return (npos, nrot)
-  let nship =
-        (ship sd)
-          { shipRot = rot
-          , shipPos = pos
-          }
+  nvhs <- mapM (\(smallBall, vh) -> do
+    ms1 <- liftIO $ getMotionState (bodyRigidBody smallBall)
+    r1 <- liftIO $ return . fmap realToFrac =<< getPosition ms1
+    return vh
+      { shipPos = r1
+      }
+    ) (zip (poBalls physos) (vertHandles sd))
+  -- (pos, rot) <- do
+  --   ms <- liftIO $ getMotionState (bodyRigidBody $ poBall physos)
+  --   npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
+  --   nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+  --   return (npos, nrot)
+  -- let nship =
+  --       (ship sd)
+  --         { shipRot = rot
+  --         , shipPos = pos
+  --         }
   putAffection sd
-    { ship = nship
+    { -- ship = nship
+      vertHandles = nvhs
     }
 
 draw :: Affection StateData ()

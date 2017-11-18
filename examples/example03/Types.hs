@@ -45,7 +45,7 @@ data Physics = Physics
 
 data PhysicsObjects = PhysicsObjects
   -- { poGround :: PhysBody StaticPlaneShape
-  { poBall   :: PhysBody SphereShape
+  { poBalls   :: [PhysBody SphereShape]
   }
 
 data PhysBody a = PhysBody
