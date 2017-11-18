@@ -113,10 +113,17 @@ executable example01
   extra-libraries:     stdc++
 
 executable example02
+  if flag(debug)
+    cpp-options:       -DDEBUG
+  if flag(warn)
+    cpp-options:       -DWARN
+  if flag(error)
+    cpp-options:       -DERROR
   main-is:             Main.hs
   other-modules:       Util
                      , Types
                      , Init
+                     , Logging
   -- other-extensions:    
   default-extensions:  OverloadedStrings
   build-depends:       base >=4.9
