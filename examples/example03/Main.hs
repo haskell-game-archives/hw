@@ -114,6 +114,7 @@ handle (SDL.KeyboardEvent dat) = do
     handleKey key
 handle (SDL.MouseMotionEvent dat) = do
   sd <- getAffection
+  curMode <- SDL.getMouseLocationMode
   let (V2 rx ry) = fromIntegral <$> SDL.mouseMotionEventRelMotion dat
       c = camera sd
   putAffection sd
@@ -123,24 +124,28 @@ handle (SDL.MouseMotionEvent dat) = do
           let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
           in  c {cameraFocus = cameraFocus c + V3 sx 0 sy}
         [] ->
-          let dphi = pi / 4 / 45 / 10
-              (Euler yaw pitch roll) = cameraRot c
-              nangle
-                | nangle' >= qc = qc - mu
-                | nangle' <= -qc = -qc + mu
-                | otherwise     = nangle'
-                where
-                  nangle' = (dphi * ry) + roll
-                  qc = pi / 2
-                  mu = 0.01
-              nrot =
-                Euler
-                  yaw
-                  (pitch + (rx * dphi))
-                  nangle
-          in  c
-            { cameraRot = nrot
-            }
+          if curMode == SDL.RelativeLocation
+          then
+            let dphi = pi / 4 / 45 / 10
+                (Euler yaw pitch roll) = cameraRot c
+                nangle
+                  | nangle' >= qc = qc - mu
+                  | nangle' <= -qc = -qc + mu
+                  | otherwise     = nangle'
+                  where
+                    nangle' = (dphi * ry) + roll
+                    qc = pi / 2
+                    mu = 0.01
+                nrot =
+                  Euler
+                    yaw
+                    (pitch + (rx * dphi))
+                    nangle
+            in c
+              { cameraRot = nrot
+              }
+          else
+            c
         _ ->
           c
     }
@@ -149,12 +154,15 @@ handle _ = return ()
 
 handleKey :: SDL.Keycode -> Affection StateData ()
 handleKey code
-  | code == SDL.KeycodeR =
-    GL.clearColor $= GL.Color4 1 0 0 1
-  | code == SDL.KeycodeG =
-    GL.clearColor $= GL.Color4 0 1 0 1
-  | code == SDL.KeycodeB =
-    GL.clearColor $= GL.Color4 0 0 1 1
+  | code == SDL.KeycodeR = do
+    curMode <- SDL.getMouseLocationMode
+    if curMode == SDL.AbsoluteLocation
+    then do
+      _ <- SDL.setMouseLocationMode SDL.RelativeLocation
+      return ()
+    else do
+      _ <- SDL.setMouseLocationMode SDL.AbsoluteLocation
+      return ()
   | code == SDL.KeycodeP = do
     r <- liftIO $ randomRIO (0, 1)
     g <- liftIO $ randomRIO (0, 1)
