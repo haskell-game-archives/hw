@@ -23,6 +23,7 @@ import Foreign
 
 import Util
 import Types
+import Logging as LL
 
 import Debug.Trace
 
@@ -92,12 +93,14 @@ load = do
 
   phys <- initPhysics
 
-  po <- initPhysicsObjects
+  po <- initPhysicsObjects (map listToPos $ chunksOf 4 $ loLocations sobj)
 
   -- traceIO $ show $ loLines sobj
 
   -- mapM_ (addRigidBody (pWorld phys)) (map bodyRigidBody (poBalls po))
-  addRigidBody (pWorld phys) (bodyRigidBody $ poBall po)
+  mapM_ (\b -> addRigidBody (pWorld phys) (bodyRigidBody b)) (poBalls po)
+
+  logIO Debug "Hello world"
 
   return StateData
     { ship = (Ship svao stl
@@ -105,7 +108,7 @@ load = do
       (Quaternion 1 (V3 0 0 0))
       (Just t)
       (Just texture))
-    , vertHandles = createHandles hvao vhtl (loTriangles sobj)
+    , vertHandles = createHandles hvao vhtl (loLocations sobj)
     , proj = perspective (pi/2) (1600 / 900) 1 (-1)
     , camera = Camera
       { cameraFocus = V3 0 0 0
@@ -128,25 +131,26 @@ initPhysics = do
   setGravity world (V3 0 0 0)
   return $ Physics bp config disp solver world
 
-initPhysicsObjects :: IO PhysicsObjects
-initPhysicsObjects = do
+initPhysicsObjects :: [V3 Float] -> IO PhysicsObjects
+initPhysicsObjects poss = do
   -- ground <- newStaticPlaneShape (V3 0 1 0) 1
-  ball <- newSphereShape 3
+  ball <- newSphereShape 0.05
 
   -- groundMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0)) (V3 0 (-51) 0)
   -- groundBody <- newRigidBody 0 groundMotionState 0.9 0.5 ground (V3 0 0 0)
 
-  -- balls <- mapM (\pos -> do
-  ballMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
-    (V3 0 0 0)
-  localInertia <- calculateLocalInertia ball 1 (V3 0 0 0)
-  ballBody <- newRigidBody 1 ballMotionState 0 0 ball localInertia
-  setSleepingThresholds ballBody 0 0
-  -- ) poss
+  balls <- mapM (\pos -> do
+    ballMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
+      (fmap realToFrac pos)
+    localInertia <- calculateLocalInertia ball 1 (V3 0 0 0)
+    ballBody <- newRigidBody 0 ballMotionState 0 0 ball localInertia
+    setSleepingThresholds ballBody 0 0
+    return $ PhysBody ball ballMotionState ballBody
+    ) poss
 
   return PhysicsObjects
     -- { poGround = PhysBody ground groundMotionState groundBody
-    { poBall  = PhysBody ball ballMotionState ballBody
+    { poBalls = balls
     }
 
 genVertBufObject :: FilePath -> IO (GL.BufferObject, LoadedObject, Int)
@@ -174,8 +178,10 @@ genVertBufObject path = do
 
 createHandles :: GL.VertexArrayObject -> Int -> [Float] -> [Ship]
 createHandles bo len ps =
-  map (\p -> Ship bo len (toPos p) (Quaternion 1 (V3 0 0 0)) Nothing Nothing) tris
+  map (\p -> Ship bo len (listToPos p) (Quaternion 1 (V3 0 0 0)) Nothing Nothing) tris
   where
-    tris            = chunksOf 3 ps
-    toPos [x, y, z] = V3 x y z
-    toPos _         = error "not triangular"
+    tris               = chunksOf 4 ps
+
+listToPos :: [Float] -> V3 Float
+listToPos [x, y, z, _] = V3 x y z
+listToPos _            = error "listToPos: not triangular coordinates encountered"

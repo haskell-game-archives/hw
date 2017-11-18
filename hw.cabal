@@ -15,6 +15,21 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
+flag debug
+  description:       Enable debug messages
+  default:           False
+  manual:            True
+
+flag warn
+  description:       Enable warning messages
+  default:           False
+  manual:            True
+
+flag error
+  description:       Enable error messages
+  default:           False
+  manual:            True
+
 executable hw
   main-is:             Main.hs
   other-modules:       Util
@@ -123,10 +138,17 @@ executable example02
   extra-libraries:     stdc++
 
 executable example03
+  if flag(debug)
+    cpp-options:       -DDEBUG
+  if flag(warn)
+    cpp-options:       -DWARN
+  if flag(error)
+    cpp-options:       -DERROR
   main-is:             Main.hs
   other-modules:       Util
                      , Types
                      , Init
+                     , Logging
   -- other-extensions:    
   default-extensions:  OverloadedStrings
   build-depends:       base >=4.9

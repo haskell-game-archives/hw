@@ -17,19 +17,19 @@ data LoadedObject = LoadedObject
   { loTriangles :: [Float]
   , loLines     :: [Float]
   , loPoints    :: [Float]
+  , loLocations :: [Float]
   , loTexTri    :: Maybe [Float]
   } deriving (Show)
 
 loadObj :: WavefrontOBJ -> LoadedObject
 loadObj obj =
-  LoadedObject ts ls ps tritex
+  LoadedObject ts ls ps locs tritex
   where
     inter = objLocations obj
     interTex = objTexCoords obj
     faces = map elValue (V.toList $ objFaces obj)
     lns = map elValue (V.toList $ objLines obj)
-    points = trace (show $ map elValue (V.toList $ objPoints obj))
-      (map elValue (V.toList $ objPoints obj))
+    points = map elValue (V.toList $ objPoints obj)
     deface (Face a b c []) =
       map (\i -> inter V.! (faceLocIndex i -1)) [a, b, c]
     deface _ =
@@ -39,12 +39,13 @@ loadObj obj =
     depoint (Point i) = inter V.! (i - 1)
     tsLocs = concatMap deface faces
     lsLocs = concatMap deline lns
-    psLocs = map depoint (trace (show points) points)
+    psLocs = map depoint points
     deLoc (Location x y z w) = [x, y, z, w]
     deTex (TexCoord r s _) = [r, s]
     ts = concatMap deLoc tsLocs
     ls = concatMap deLoc lsLocs
     ps = concatMap deLoc psLocs
+    locs = concatMap deLoc (V.toList inter)
     defaceTex :: Face -> Maybe [TexCoord]
     defaceTex (Face a b c []) =
       mapM
