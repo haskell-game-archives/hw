@@ -23,18 +23,47 @@ import System.Random (randomRIO)
 
 import SpatialMath
 
+import Options.Applicative
+import Data.Semigroup ((<>))
+
 import Init
 import Types
+import Foreign.C.Types (CInt(..))
 
 import Debug.Trace as T
 
+opts :: Parser Opts
+opts = Opts
+  <$> option auto
+    (  long "width"
+    <> short 'w'
+    <> value 1600
+    <> showDefault
+    <> metavar "NUM"
+    <> help "Screen width"
+    )
+  <*> option auto
+    (  long "height"
+    <> short 'h'
+    <> value 900
+    <> showDefault
+    <> metavar "NUM"
+    <> help "Screen height"
+    )
+
 main :: IO ()
-main =
+main = do
+  o <- execParser $ info opts
+    (  fullDesc
+    <> progDesc "sample for hw game"
+    )
   withAffection AffectionConfig
     { initComponents = All
     , windowTitle    = "hw"
     , windowConfig   = SDL.defaultWindow
-      { SDL.windowInitialSize = SDL.V2 1600 900
+      { SDL.windowInitialSize = SDL.V2
+        (CInt $ fromIntegral $ width o)
+        (CInt $ fromIntegral $ height o)
       , SDL.windowOpenGL = Just SDL.defaultOpenGL
         { SDL.glProfile = SDL.Core SDL.Normal 3 2
         }
@@ -43,8 +72,8 @@ main =
     , preLoop = return ()
     , eventLoop = handle
     , updateLoop = update
-    , drawLoop = draw
-    , loadState = load
+    , drawLoop = draw (width o) (height o)
+    , loadState = load (width o) (height o)
     , cleanUp = const (return ())
     , canvasSize = Nothing
     }
@@ -77,10 +106,10 @@ update dt = do
       vertHandles = nvhs
     }
 
-draw :: Affection StateData ()
-draw =
+draw :: Word -> Word -> Affection StateData ()
+draw w h =
   do
-    GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
+    GL.viewport $= (GL.Position 0 0, GL.Size (fromIntegral w) (fromIntegral h))
     StateData{..} <- getAffection
     let view = lookAt
           (cameraFocus camera +

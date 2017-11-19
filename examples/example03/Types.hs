@@ -9,6 +9,11 @@ import SpatialMath
 
 import Physics.Bullet.Raw as Bullet
 
+data Opts = Opts
+  { width :: Word
+  , height :: Word
+  }
+
 data StateData = StateData
   { ship :: Ship
   , vertHandles :: [Ship]
@@ -18,6 +23,7 @@ data StateData = StateData
   , physicsObjects :: PhysicsObjects
   , shipProgram :: GLU.ShaderProgram
   , handleProgram :: GLU.ShaderProgram
+  , selHandleProgram :: GLU.ShaderProgram
   }
 
 data Ship = Ship
@@ -27,7 +33,7 @@ data Ship = Ship
   , shipRot     :: Quaternion Float
   , shipTexture :: Maybe GL.TextureObject
   , shipUVs     :: Maybe GL.BufferObject
-  }
+  } deriving (Eq)
 
 data Camera = Camera
   { cameraFocus :: V3 Float

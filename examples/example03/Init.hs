@@ -27,8 +27,8 @@ import Logging as LL
 
 import Debug.Trace
 
-load :: IO StateData
-load = do
+load :: Word -> Word -> IO StateData
+load w h = do
   _ <- SDL.setMouseLocationMode SDL.RelativeLocation
   GL.depthFunc $= Just GL.Less
 
@@ -84,12 +84,19 @@ load = do
       fragmentShaderHandle = foldl BS.append BS.empty
         [ "varying vec2 f_texcoord;"
         , "void main(void) {"
-        , "  gl_FragColor = vec4(1.0,0.0,1.0,0.5);"
+        , "  gl_FragColor = vec4(1,0,1,0.5);"
+        , "}"
+        ]
+      fragmentShaderSelHandle = foldl BS.append BS.empty
+        [ "varying vec2 f_texcoord;"
+        , "void main(void) {"
+        , "  gl_FragColor = vec4(1,1,0,0.5);"
         , "}"
         ]
 
   hProgram <- GLU.simpleShaderProgramBS vertexShader fragmentShaderHandle
   sProgram <- GLU.simpleShaderProgramBS vertexShader fragmentShaderShip
+  cProgram <- GLU.simpleShaderProgramBS vertexShader fragmentShaderSelHandle
 
   phys <- initPhysics
 
@@ -109,7 +116,7 @@ load = do
       (Just t)
       (Just texture))
     , vertHandles = createHandles hvao vhtl (loLocations sobj)
-    , proj = perspective (pi/2) (1600 / 900) 1 (-1)
+    , proj = perspective (pi/2) (fromIntegral w / fromIntegral h) 1 (-1)
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
@@ -119,6 +126,7 @@ load = do
     , physicsObjects = po
     , shipProgram = sProgram
     , handleProgram = hProgram
+    , selHandleProgram = cProgram
     }
 
 initPhysics :: IO Physics

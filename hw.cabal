@@ -172,6 +172,7 @@ executable example03
                      , wavefront
                      , shoot
                      , split
+                     , optparse-applicative
   hs-source-dirs:      examples/example03
   default-language:    Haskell2010
   ghc-options:         -Wall
