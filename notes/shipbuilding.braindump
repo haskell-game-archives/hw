@@ -3,6 +3,7 @@
 Can be made before multiplayer sessions (recommended) but also
 in-game (but time does not stop).
 
-Ships are combined from predefined components (core, weaponry, hangars, ...)
+Ships are combined from predefined components (core, weaponry, hangars, ...) and
+the hull is a free form around it
 
-ships are shared like in spore
+ships are shared like in spore (png pictures with 3D data enclosed)
