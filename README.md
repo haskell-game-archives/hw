@@ -11,7 +11,7 @@ This game is not a game yet and things will change a lot.
 
 you will need some unstable libraries in your sandbox:
 
-* [affection (3d branch)](https://github.com/nek0/affection/tree/3d)
+* [affection](https://github.com/nek0/affection)
 * [gegl](https://github.com/nek0/gegl)
 * [babl](https://github.com/nek0/babl)
 

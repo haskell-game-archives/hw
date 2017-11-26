@@ -1,0 +1,8 @@
+Content-Type: text/x-zim-wiki
+Wiki-Format: zim 0.4
+Creation-Date: 2017-11-21T20:01:16+01:00
+
+====== Name ======
+Created Úterý 21 listopad 2017
+
+the current working name of the project is hw, which will (hopefully) change.
