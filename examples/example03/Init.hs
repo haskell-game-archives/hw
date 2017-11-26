@@ -120,7 +120,7 @@ load w h = do
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
-      , cameraDist = -10
+      , cameraDist = -6
       }
     , physics = phys
     , physicsObjects = po
