@@ -137,7 +137,7 @@ executable example02
                      , GLUtil
                      , random
                      , vector
-                     , wavefront
+                     , wavefront >= 0.7.1.2
                      , shoot
   hs-source-dirs:      examples/example02
   default-language:    Haskell2010

@@ -34,12 +34,12 @@ main =
     , windowConfig   = SDL.defaultWindow
       { SDL.windowInitialSize = SDL.V2 1600 900
       , SDL.windowOpenGL = Just SDL.defaultOpenGL
-        { SDL.glProfile = SDL.Core SDL.Normal 3 2
+        { SDL.glProfile = SDL.Core SDL.Normal 3 0
         }
       }
     , initScreenMode = SDL.Fullscreen
     , preLoop = return ()
-    , eventLoop = handle
+    , eventLoop = mapM_ handle
     , updateLoop = update
     , drawLoop = draw
     , loadState = load

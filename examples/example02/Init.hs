@@ -39,7 +39,7 @@ genVertBufObject path = do
   GL.bindBuffer GL.ArrayBuffer $= Just verts
   withArray (loTriangles lobj) $ \ptr ->
     GL.bufferData GL.ArrayBuffer $=
-      ( fromIntegral $ length (loTriangles lobj) * 3 * sizeOf (0 :: Double)
+      ( fromIntegral $ length (loTriangles lobj) * sizeOf (0 :: Float)
       , ptr
       , GL.StaticDraw
       )
@@ -48,6 +48,8 @@ genVertBufObject path = do
     , GL.VertexArrayDescriptor 4 GL.Float 0 (plusPtr nullPtr 0)
     )
   GL.vertexAttribArray (GL.AttribLocation 0) $= GL.Enabled
+  GL.bindBuffer GL.ArrayBuffer $= Nothing
+  GL.bindVertexArrayObject $= Nothing
   return (shipBO, length (loTriangles lobj))
 
 load :: IO StateData
@@ -72,7 +74,7 @@ load = do
       fragmentShader = foldl BS.append BS.empty
         [ "varying vec2 f_texcoord;"
         , "void main(void) {"
-        , "  gl_FragColor = vec4(1,1,1,0.5);"
+        , "  gl_FragColor = vec4(1.0,1.0,1.0,1.0);"
         , "}"
         ]
   p <- GLU.simpleShaderProgramBS vertexShader fragmentShader

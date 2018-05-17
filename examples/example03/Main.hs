@@ -70,7 +70,7 @@ main = do
       }
     , initScreenMode = SDL.Fullscreen
     , preLoop = return ()
-    , eventLoop = handle
+    , eventLoop = mapM_ handle
     , updateLoop = update
     , drawLoop = draw (width o) (height o)
     , loadState = load (width o) (height o)

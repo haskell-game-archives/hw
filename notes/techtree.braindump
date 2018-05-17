@@ -6,3 +6,28 @@ research only in single player mode
 
 Gather resources in multiplayer mode to spend them on for (very expensive)
 research in singleplayer mode
+
+## FTL technology
+
+### Warp
+
+Continuous drive, requires negative energy, rather stealthy
+
+### Slingshot
+
+Discrete drive, not stealthy at all, nomen est omen
+ship gets accellerated to near lightspeed by internal means. Because of photons
+"reflecting" from the ship it generate a characteristic radiation pattern, which
+can be observed far and wide.
+
+### Jump drive
+
+Discrete drive, computation heavy, can be unreliable at targeting
+
+### Gateways
+
+Discrete drive, needs specialized structures/stations
+
+### Tachyon sails
+
+Continuous drive

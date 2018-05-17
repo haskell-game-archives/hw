@@ -23,7 +23,7 @@ loadObj obj =
     lns = map elValue (V.toList $ objLines obj)
     points = map elValue (V.toList $ objPoints obj)
     deface (Face a b c []) =
-      map (\i -> inter V.! (faceLocIndex i -1)) [a, b, c]
+      map (\i -> inter V.! (faceLocIndex i - 1)) [a, b, c]
     deface _ =
       error "loadObj: obj with quads encountered"
     deline (Line a b) =
