@@ -52,20 +52,52 @@ update dt = do
   sd <- getAffection
   let phys = physics sd
       physos = physicsObjects sd
+      g = 0.0667300
+      -- g = 0.0000000000667300
+
   mapM_ (\smallBall -> do
     ms1 <- liftIO $ getMotionState (bodyRigidBody smallBall)
     ms2 <- liftIO $ getMotionState (bodyRigidBody $ poBigBall physos)
     r1 <- liftIO $ return . fmap realToFrac =<< getPosition ms1
     r2 <- liftIO $ return . fmap realToFrac =<< getPosition ms2
-    let g = 0.0000000000667300
-        m1 = bodyMass smallBall
+    let m1 = bodyMass smallBall
         -- m2 = bodyMass (poBigBall physos)
-        m2 = 1000000000000000
+        -- m2 = 1000000000000000
+        m2 = 1000000
         eta_sq = 0.1 ^ 2
         force = (g * m2 * m1 *^ (r2 - r1)) ^/
           ((sqrt (((r2 - r1) `dot` (r2 - r1)) + eta_sq)) ^ 3)
     liftIO $ applyCentralForce (bodyRigidBody smallBall) force
-    ) (poSmallBalls physos)
+    ) (poSmallBalls physos ++ poBigBalls physos)
+
+  mapM_ (\(bb1, bb2) -> do
+    ms1 <- liftIO $ getMotionState (bodyRigidBody bb1)
+    ms2 <- liftIO $ getMotionState (bodyRigidBody bb2)
+    r1 <- liftIO $ return . fmap realToFrac =<< getPosition ms1
+    r2 <- liftIO $ return . fmap realToFrac =<< getPosition ms2
+    let m1 = bodyMass bb1
+        -- m2 = bodyMass (poBigBall physos)
+        m2 = bodyMass bb2
+        eta_sq = 0.1 ^ 2
+        force = (g * m2 * m1 *^ (r2 - r1)) ^/
+          ((sqrt (((r2 - r1) `dot` (r2 - r1)) + eta_sq)) ^ 3)
+    liftIO $ applyCentralForce (bodyRigidBody bb1) force
+    ) ((,) <$> (poBigBalls physos) <*> (poBigBalls physos))
+
+  mapM_ (\(bb1, bb2) -> do
+    ms1 <- liftIO $ getMotionState (bodyRigidBody bb1)
+    ms2 <- liftIO $ getMotionState (bodyRigidBody bb2)
+    r1 <- liftIO $ return . fmap realToFrac =<< getPosition ms1
+    r2 <- liftIO $ return . fmap realToFrac =<< getPosition ms2
+    let m1 = bodyMass bb1
+        -- m2 = bodyMass (poBigBall physos)
+        m2 = bodyMass bb2
+        eta_sq = 0.1 ^ 2
+        force = (g * m2 * m1 *^ (r2 - r1)) ^/
+          ((sqrt (((r2 - r1) `dot` (r2 - r1)) + eta_sq)) ^ 3)
+    liftIO $ applyCentralForce (bodyRigidBody bb1) force
+    ) ((,) <$> (poSmallBalls physos) <*> (poBigBalls physos))
+
   liftIO $ stepSimulation (pWorld phys) dt 10 Nothing
   posrots <- mapM ((\ball -> do
     ms <- liftIO $ getMotionState ball
@@ -73,35 +105,56 @@ update dt = do
     nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
     return (npos, nrot))
     . bodyRigidBody) (poSmallBalls physos)
+  posrots2 <- mapM ((\ball -> do
+    ms <- liftIO $ getMotionState ball
+    npos <- liftIO $ return . fmap realToFrac =<< getPosition ms
+    nrot <- liftIO $ return . fmap realToFrac =<< getRotation ms
+    return (npos, nrot))
+    . bodyRigidBody) (poBigBalls physos)
   let nships = map (\(ship, (pos, rot)) ->
         ship
           { shipRot = rot
           , shipPos = pos
           }
         ) (zip (ships sd) posrots)
+      nplanets = map (\(ball, (pos, rot)) ->
+        ball
+          { shipRot = rot
+          , shipPos = pos
+          }
+        ) (zip (oplanets sd) posrots2)
   putAffection sd
     { ships = nships
+    , oplanets = nplanets
+    , camera = (camera sd)
+      { cameraFocus = shipPos ((planet sd : nplanets) !! focusIndex sd)
+      }
     }
 
 draw :: Affection StateData ()
 draw = do
   GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
   StateData{..} <- getAffection
-  GL.currentProgram $= (Just . GLU.program $ program)
-  mapM_ (\Ship{..} -> do
-    let view = lookAt
-          (cameraFocus camera +
-            rotVecByEulerB2A
-            (cameraRot camera)
-            (V3 0 0 (-cameraDist camera)))
-          (cameraFocus camera)
-          (V3 0 1 0)
-        model = mkTransformation shipRot shipPos
-        pvm = proj !*! view !*! model
-    liftIO $ GLU.setUniform program "mvp" pvm
-    GL.bindVertexArrayObject $= Just shipVao
-    liftIO $ GL.drawArrays GL.Triangles 0 (fromIntegral shipVaoLen)
-    ) (planet : ships)
+  drawThings program (planet : ships)
+  drawThings program2 oplanets
+  where
+  drawThings prog ts = do
+    StateData{..} <- getAffection
+    GL.currentProgram $= (Just . GLU.program $ prog)
+    mapM_ (\Ship{..} -> do
+      let view = lookAt
+            (cameraFocus camera +
+              rotVecByEulerB2A
+              (cameraRot camera)
+              (V3 0 0 (-cameraDist camera)))
+            (cameraFocus camera)
+            (V3 0 1 0)
+          model = mkTransformation shipRot shipPos
+          pvm = proj !*! view !*! model
+      liftIO $ GLU.setUniform program "mvp" pvm
+      GL.bindVertexArrayObject $= Just shipVao
+      liftIO $ GL.drawArrays GL.Triangles 0 (fromIntegral shipVaoLen)
+      ) ts
 
 handle :: SDL.EventPayload -> Affection StateData ()
 handle (SDL.WindowClosedEvent _) = quit
@@ -117,9 +170,9 @@ handle (SDL.MouseMotionEvent dat) = do
   putAffection sd
     { camera =
       case SDL.mouseMotionEventState dat of
-        [SDL.ButtonRight] ->
-          let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
-          in  c {cameraFocus = cameraFocus c + V3 sx 0 sy}
+        -- [SDL.ButtonRight] ->
+        --   let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
+        --   in  c {cameraFocus = cameraFocus c + V3 sx 0 sy}
         [] ->
           let dphi = pi / 4 / 45 / 10
               (Euler yaw pitch roll) = cameraRot c
@@ -147,6 +200,17 @@ handle _ = return ()
 
 handleKey :: SDL.Keycode -> Affection StateData ()
 handleKey code
+  | code == SDL.KeycodeTab = do
+      ud <- getAffection
+      let ind = focusIndex ud
+          ps  = planet ud : oplanets ud
+      if ind + 1 < length ps
+      then putAffection ud
+        { focusIndex = ind + 1
+        }
+      else putAffection ud
+        { focusIndex = 0
+        }
   | code == SDL.KeycodeR =
     GL.clearColor $= GL.Color4 1 0 0 1
   | code == SDL.KeycodeG =

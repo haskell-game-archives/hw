@@ -71,13 +71,20 @@ load = do
         , "  f_texcoord = texcoord;"
         , "}"
         ]
-      fragmentShader = foldl BS.append BS.empty
+      fragmentShaderSmall = foldl BS.append BS.empty
         [ "varying vec2 f_texcoord;"
         , "void main(void) {"
         , "  gl_FragColor = vec4(1.0,1.0,1.0,1.0);"
         , "}"
         ]
-  p <- GLU.simpleShaderProgramBS vertexShader fragmentShader
+      fragmentShaderBig = foldl BS.append BS.empty
+        [ "varying vec2 f_texcoord;"
+        , "void main(void) {"
+        , "  gl_FragColor = vec4(1.0,0,0,1.0);"
+        , "}"
+        ]
+  p <- GLU.simpleShaderProgramBS vertexShader fragmentShaderSmall
+  p2 <- GLU.simpleShaderProgramBS vertexShader fragmentShaderBig
 
   poss <- mapM (\_ -> do
     x <- randomRIO (-50, 50)
@@ -86,21 +93,33 @@ load = do
     return (V3 x y z)
     ) [0..2000]
 
+  poss2 <- mapM (\_ -> do
+    x <- randomRIO (-100, 100)
+    y <- randomRIO (-100, 100)
+    z <- randomRIO (-100, 100)
+    return (V3 x y z)
+    ) [0..9]
+
   let shipList = zipWith (Ship shipBO stl)
         poss
         (repeat $ Quaternion 1 (V3 0 0 0))
       planet = Ship planetBO ptl (V3 0 0 0) (Quaternion 1 (V3 0 0 0))
+      otherPlanets = zipWith (Ship planetBO ptl)
+        poss2
+        (repeat $ Quaternion 1 (V3 0 0 0))
 
   phys <- initPhysics
 
-  po <- initPhysicsObjects poss
+  po <- initPhysicsObjects poss poss2
 
   mapM_ (addRigidBody (pWorld phys) . bodyRigidBody) (poSmallBalls po)
+  mapM_ (addRigidBody (pWorld phys) . bodyRigidBody) (poBigBalls po)
   addRigidBody (pWorld phys) (bodyRigidBody $ poBigBall po)
 
   return StateData
     { ships = shipList
     , planet = planet
+    , oplanets = otherPlanets
     , proj = perspective (pi/2) (1600 / 900) 1 (-1)
     , camera = Camera
       { cameraFocus = V3 0 0 0
@@ -108,8 +127,10 @@ load = do
       , cameraDist = -100
       }
     , program = p
+    , program2 = p2
     , physics = phys
     , physicsObjects = po
+    , focusIndex = 0
     }
 
 loadTex :: FilePath -> IO GL.TextureObject
@@ -129,8 +150,8 @@ initPhysics = do
   setGravity world (V3 0 0 0)
   return $ Physics bp config disp solver world
 
-initPhysicsObjects :: [V3 Float] -> IO PhysicsObjects
-initPhysicsObjects poss = do
+initPhysicsObjects :: [V3 Float] -> [V3 Float] -> IO PhysicsObjects
+initPhysicsObjects poss poss2 = do
   -- ground <- newStaticPlaneShape (V3 0 1 0) 1
   smallBall <- newSphereShape 1
   bigBall <- newSphereShape 5
@@ -139,12 +160,29 @@ initPhysicsObjects poss = do
   -- groundBody <- newRigidBody 0 groundMotionState 0.9 0.5 ground (V3 0 0 0)
 
   smallBallPOs <- mapM (\pos -> do
+    -- fx <- randomRIO (-1000, 1000)
+    -- fy <- randomRIO (-1000, 1000)
+    -- fz <- randomRIO (-1000, 1000)
     smallBallMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
       (fmap realToFrac pos)
     localInertia <- calculateLocalInertia smallBall 1 (V3 0 0 0)
     smallBallBody <- newRigidBody 1 smallBallMotionState 0.9 0.5 smallBall localInertia
+    -- applyCentralForce smallBallBody (V3 fx fy fz)
     return $ PhysBody smallBall smallBallMotionState smallBallBody 1
     ) poss
+
+  bigBallsPOs <- mapM (\pos -> do
+    let m = 1000000
+    fx <- randomRIO (-1000, 1000)
+    fy <- randomRIO (-1000, 1000)
+    fz <- randomRIO (-1000, 1000)
+    bigBallMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
+      (fmap realToFrac pos)
+    localInertia <- calculateLocalInertia bigBall m (V3 0 0 0)
+    bigBallBody <- newRigidBody m bigBallMotionState 0.9 0.5 bigBall localInertia
+    applyCentralForce bigBallBody (V3 fx fy fz)
+    return $ PhysBody bigBall bigBallMotionState bigBallBody m
+    ) poss2
 
   bigBallPO <- do
     bigBallMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
@@ -156,4 +194,5 @@ initPhysicsObjects poss = do
   return PhysicsObjects
     { poBigBall = bigBallPO
     , poSmallBalls  = smallBallPOs
+    , poBigBalls = bigBallsPOs
     }
