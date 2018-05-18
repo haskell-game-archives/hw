@@ -136,6 +136,7 @@ draw = do
   GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
   StateData{..} <- getAffection
   drawThings program (planet : ships)
+  -- drawThings program (ships)
   drawThings program2 oplanets
   where
   drawThings prog ts = do
@@ -204,6 +205,7 @@ handleKey code
       ud <- getAffection
       let ind = focusIndex ud
           ps  = planet ud : oplanets ud
+          -- ps  = oplanets ud
       if ind + 1 < length ps
       then putAffection ud
         { focusIndex = ind + 1

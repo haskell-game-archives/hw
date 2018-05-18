@@ -67,7 +67,10 @@ load = do
         , "uniform mat4 mvp;"
         , "varying vec2 f_texcoord;"
         , "void main(void) {"
+        , "  float zoom = 1.0;"
         , "  gl_Position = mvp * vec4(coord3d, 1.0);"
+        -- , "  gl_Position.z = 0.0;"
+        -- , "  gl_Position.w += 10.0;"
         , "  f_texcoord = texcoord;"
         , "}"
         ]
@@ -91,7 +94,7 @@ load = do
     y <- randomRIO (-50, 50)
     z <- randomRIO (-50, 50)
     return (V3 x y z)
-    ) [0..2000]
+    ) [0..2222]
 
   poss2 <- mapM (\_ -> do
     x <- randomRIO (-100, 100)
@@ -120,7 +123,7 @@ load = do
     { ships = shipList
     , planet = planet
     , oplanets = otherPlanets
-    , proj = perspective (pi/2) (1600 / 900) 1 (-1)
+    , proj = infinitePerspective (pi/2) (1600 / 900) 1
     , camera = Camera
       { cameraFocus = V3 0 0 0
       , cameraRot = Euler 0 0 0
@@ -163,24 +166,25 @@ initPhysicsObjects poss poss2 = do
     -- fx <- randomRIO (-1000, 1000)
     -- fy <- randomRIO (-1000, 1000)
     -- fz <- randomRIO (-1000, 1000)
+    let m = 100
     smallBallMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
       (fmap realToFrac pos)
-    localInertia <- calculateLocalInertia smallBall 1 (V3 0 0 0)
-    smallBallBody <- newRigidBody 1 smallBallMotionState 0.9 0.5 smallBall localInertia
+    localInertia <- calculateLocalInertia smallBall m (V3 0 0 0)
+    smallBallBody <- newRigidBody m smallBallMotionState 0.9 0.5 smallBall localInertia
     -- applyCentralForce smallBallBody (V3 fx fy fz)
-    return $ PhysBody smallBall smallBallMotionState smallBallBody 1
+    return $ PhysBody smallBall smallBallMotionState smallBallBody m
     ) poss
 
   bigBallsPOs <- mapM (\pos -> do
     let m = 1000000
-    fx <- randomRIO (-1000, 1000)
-    fy <- randomRIO (-1000, 1000)
-    fz <- randomRIO (-1000, 1000)
+    -- fx <- randomRIO (-1000, 1000)
+    -- fy <- randomRIO (-1000, 1000)
+    -- fz <- randomRIO (-1000, 1000)
     bigBallMotionState <- newDefaultMotionState (Quaternion 1 (V3 0 0 0))
       (fmap realToFrac pos)
     localInertia <- calculateLocalInertia bigBall m (V3 0 0 0)
     bigBallBody <- newRigidBody m bigBallMotionState 0.9 0.5 bigBall localInertia
-    applyCentralForce bigBallBody (V3 fx fy fz)
+    -- applyCentralForce bigBallBody (V3 fx fy fz)
     return $ PhysBody bigBall bigBallMotionState bigBallBody m
     ) poss2
 
@@ -195,4 +199,5 @@ initPhysicsObjects poss poss2 = do
     { poBigBall = bigBallPO
     , poSmallBalls  = smallBallPOs
     , poBigBalls = bigBallsPOs
+    -- , poBigBalls = []
     }
