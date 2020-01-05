@@ -94,14 +94,14 @@ load = do
     y <- randomRIO (-50, 50)
     z <- randomRIO (-50, 50)
     return (V3 x y z)
-    ) [0..2222]
+    ) [0..1999]
 
   poss2 <- mapM (\_ -> do
     x <- randomRIO (-100, 100)
     y <- randomRIO (-100, 100)
     z <- randomRIO (-100, 100)
     return (V3 x y z)
-    ) [0..9]
+    ) [] -- [0..9]
 
   let shipList = zipWith (Ship shipBO stl)
         poss
