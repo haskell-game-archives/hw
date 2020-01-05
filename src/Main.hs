@@ -31,12 +31,16 @@ main =
   withAffection AffectionConfig
     { initComponents = All
     , windowTitle    = "hw"
-    , windowConfig   = SDL.defaultWindow
-      { SDL.windowInitialSize = SDL.V2 1600 900
-      , SDL.windowOpenGL = Just SDL.defaultOpenGL
-        { SDL.glProfile = SDL.Core SDL.Normal 3 3
-        }
-      }
+    , windowConfigs  =
+      [ ( 0
+        , SDL.defaultWindow
+          { SDL.windowInitialSize = SDL.V2 1600 900
+          , SDL.windowGraphicsContext = SDL.OpenGLContext SDL.defaultOpenGL
+            { SDL.glProfile = SDL.Core SDL.Normal 3 3
+            }
+          }
+        )
+      ]
     , initScreenMode = SDL.Fullscreen
     , preLoop = return ()
     , eventLoop = mapM_ handle

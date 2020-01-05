@@ -4,21 +4,17 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  affectionNeko = with haskellPackages; callPackage ({ mkDerivation
-    , base, bytestring, clock, containers, glib, linear, monad-loops, monad-parallel
-    , mtl, OpenGL, sdl2, stdenv, stm, text, uuid, vector }:
+  affection = with haskellPackages; callPackage(
+    { mkDerivation, base, bytestring, clock, containers, glib, linear
+    , monad-loops, monad-parallel, mtl, OpenGL, sdl2, stdenv, stm, text
+    , uuid, vector
+    }:
     mkDerivation {
       pname = "affection";
       version = "0.0.0.9";
-      #src = pkgs.fetchFromGitHub {
-      #  owner = "nek0";
-      #  repo = "affection";
-      #  rev = "33c99b8888328e4ed17f5c65ac49f5eab2645549";
-      #  sha256 = "0psqxqj1a8l5fia49ay2pb72kjnw5i54m6dcmrpz5hi1654aznll";
-      #};
       src = ../affection;
-      revision = "1";
       isLibrary = true;
+      isExecutable = true;
       libraryHaskellDepends = [
         base bytestring clock containers glib linear monad-loops
         monad-parallel mtl OpenGL sdl2 stm text uuid vector
@@ -66,9 +62,26 @@ let
   }) {};
 
 
+  shoot = with haskellPackages; callPackage(
+    { mkDerivation, base, inline-c, inline-c-cpp, linear
+    , stdenv, nbullet
+    }:
+    mkDerivation {
+      pname = "shoot";
+      version = "0.0.0.0";
+      src = ../shoot;
+      isLibrary = true;
+      isExecutable = true;
+      libraryHaskellDepends = [ base inline-c inline-c-cpp linear ];
+      #librarySystemDepends = [ nbullet ];
+      libraryPkgconfigDepends = [ nbullet ];
+      description = "Haskell bindings to bullet library";
+      license = stdenv.lib.licenses.lgpl3;
+    }) {nbullet = pkgs.bullet;};
+
   f = { mkDerivation, base, bytestring, GLUtil, linear
-      , OpenGL, OpenGLRaw, optparse-applicative, random, sdl2
-      , split, stdenv, vector, wavefront
+      , OpenGL, OpenGLRaw, random, sdl2, spatial-math, stdenv
+      , vector, wavefront
       }:
       mkDerivation {
         pname = "hw";
@@ -81,6 +94,11 @@ let
           affectionNeko base bytestring GLUtil linear OpenGL OpenGLRaw
           optparse-applicative random sdl2 shootNeko spatial split vector
           wavefront
+        isLibrary = false;
+        isExecutable = true;
+        executableHaskellDepends = [
+          affection base bytestring GLUtil linear OpenGL OpenGLRaw random
+          sdl2 shoot spatial-math vector wavefront
         ];
         license = stdenv.lib.licenses.gpl3;
       };

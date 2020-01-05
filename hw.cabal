@@ -37,9 +37,9 @@ executable hw
                      , Init
   -- other-extensions:    
   default-extensions:  OverloadedStrings
-  build-depends:       base >=4.9
+  build-depends:       base >=4.12
                      , affection
-                     , sdl2
+                     , sdl2 >=2.5.0.0
                      , linear
                      , spatial-math
                      , bytestring
@@ -67,9 +67,9 @@ executable example00
   -- other-extensions:    
   default-extensions:  OverloadedStrings
   if flag(examples)
-    build-depends:       base >=4.9
+    build-depends:       base >=4.12
                        , affection
-                       , sdl2
+                       , sdl2 >=2.5.0.0
                        , linear
                        , spatial-math
                        , bytestring
@@ -94,9 +94,9 @@ executable example01
                      , Init
   -- other-extensions:    
   default-extensions:  OverloadedStrings
-  build-depends:       base >=4.9
+  build-depends:       base >=4.12
                      , affection
-                     , sdl2
+                     , sdl2 >=2.5.0.0
                      , linear
                      , spatial-math
                      , bytestring
@@ -126,9 +126,9 @@ executable example02
                      , Logging
   -- other-extensions:    
   default-extensions:  OverloadedStrings
-  build-depends:       base >=4.9
+  build-depends:       base >=4.12
                      , affection
-                     , sdl2
+                     , sdl2 >=2.5.0.0
                      , linear
                      , spatial-math
                      , bytestring

@@ -31,13 +31,17 @@ main =
   withAffection AffectionConfig
     { initComponents = All
     , windowTitle    = "hw - example 02"
-    , windowConfig   = SDL.defaultWindow
-      { SDL.windowInitialSize = SDL.V2 1600 900
-      , SDL.windowOpenGL = Just SDL.defaultOpenGL
-        { SDL.glProfile = SDL.Core SDL.Normal 3 0
-        }
-      }
-    , initScreenMode = SDL.Fullscreen
+    , windowConfigs  =
+      [ ( 0
+        , SDL.defaultWindow
+          { SDL.windowInitialSize = SDL.V2 1920 1080
+          , SDL.windowGraphicsContext = SDL.OpenGLContext SDL.defaultOpenGL
+            { SDL.glProfile = SDL.Core SDL.Normal 3 2
+            }
+          }
+        )
+      ]
+    , initScreenMode = SDL.FullscreenDesktop
     , preLoop = return ()
     , eventLoop = mapM_ handle
     , updateLoop = update
@@ -133,7 +137,7 @@ update dt = do
 
 draw :: Affection StateData ()
 draw = do
-  GL.viewport $= (GL.Position 0 0, GL.Size 1600 900)
+  GL.viewport $= (GL.Position 0 0, GL.Size 1920 1080)
   StateData{..} <- getAffection
   drawThings program (planet : ships)
   -- drawThings program (ships)
