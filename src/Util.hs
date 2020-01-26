@@ -1,9 +1,6 @@
 module Util where
 
 import Codec.Wavefront
-
-import Control.Monad (sequence)
-
 import qualified Data.Vector as V
 
 data LoadedObject = LoadedObject

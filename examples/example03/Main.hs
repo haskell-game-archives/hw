@@ -15,8 +15,6 @@ import Physics.Bullet.Raw
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 
-import qualified Data.ByteString as BS
-
 import Linear as L
 
 import System.Random (randomRIO)
@@ -29,8 +27,6 @@ import Data.Semigroup ((<>))
 import Init
 import Types
 import Foreign.C.Types (CInt(..))
-
-import Debug.Trace as T
 
 opts :: Parser Opts
 opts = Opts
@@ -60,14 +56,14 @@ main = do
   withAffection AffectionConfig
     { initComponents = All
     , windowTitle    = "hw"
-    , windowConfig   = SDL.defaultWindow
+    , windowConfigs   = [(0, SDL.defaultWindow
       { SDL.windowInitialSize = SDL.V2
         (CInt $ fromIntegral $ width o)
         (CInt $ fromIntegral $ height o)
-      , SDL.windowOpenGL = Just SDL.defaultOpenGL
+      , SDL.windowGraphicsContext = SDL.OpenGLContext SDL.defaultOpenGL
         { SDL.glProfile = SDL.Core SDL.Normal 3 2
         }
-      }
+      })]
     , initScreenMode = SDL.Fullscreen
     , preLoop = return ()
     , eventLoop = mapM_ handle
@@ -150,7 +146,7 @@ handle (SDL.MouseMotionEvent dat) = do
     { camera =
       case SDL.mouseMotionEventState dat of
         [SDL.ButtonRight] ->
-          let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
+          let (V3 sx sy _sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
           in  c {cameraFocus = cameraFocus c + V3 sx 0 sy}
         [] ->
           if curMode == SDL.RelativeLocation

@@ -25,8 +25,6 @@ import Util
 import Types
 import Logging as LL
 
-import Debug.Trace
-
 load :: Word -> Word -> IO StateData
 load w h = do
   _ <- SDL.setMouseLocationMode SDL.RelativeLocation

@@ -24,8 +24,6 @@ import SpatialMath
 import Init
 import Types
 
-import Debug.Trace as T
-
 main :: IO ()
 main =
   withAffection AffectionConfig
@@ -108,7 +106,7 @@ handle (SDL.MouseMotionEvent dat) = do
     { camera =
       case SDL.mouseMotionEventState dat of
         [SDL.ButtonRight] ->
-          let (V3 sx sy sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
+          let (V3 sx sy _sz) = rotVecByEuler (cameraRot c) (V3 (rx / 10) 0 (ry / 10))
           in  c {cameraFocus = cameraFocus c + V3 sx 0 sy}
         [] ->
           let dphi = pi / 4 / 45 / 10

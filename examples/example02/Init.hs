@@ -25,6 +25,7 @@ import Foreign
 import Util
 import Types
 
+genVertBufObject :: FilePath -> IO (GL.VertexArrayObject, Int)
 genVertBufObject path = do
   eobj <- fromFile path
   let obj = case eobj of
@@ -94,7 +95,7 @@ load = do
     y <- randomRIO (-50, 50)
     z <- randomRIO (-50, 50)
     return (V3 x y z)
-    ) [0..1999]
+    ) ([0..1999] :: [Int])
 
   poss2 <- mapM (\_ -> do
     x <- randomRIO (-100, 100)

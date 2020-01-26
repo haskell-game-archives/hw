@@ -24,8 +24,6 @@ import SpatialMath
 import Init
 import Types
 
-import Debug.Trace as T
-
 main :: IO ()
 main =
   withAffection AffectionConfig

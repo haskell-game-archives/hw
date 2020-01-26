@@ -2,16 +2,12 @@ module Util where
 
 import Codec.Wavefront
 
-import Control.Monad (sequence)
-
 import SDL (($=))
 
 import qualified Graphics.Rendering.OpenGL as GL
 import qualified Graphics.GLUtil as GLU
 
 import qualified Data.Vector as V
-
-import Debug.Trace
 
 data LoadedObject = LoadedObject
   { loTriangles :: [Float]

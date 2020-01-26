@@ -1,8 +1,6 @@
 {-# LANGUAGE CPP #-}
 module Logging where
 
-import Debug.Trace
-
 data LogLevel
   = Debug
   | Warn
